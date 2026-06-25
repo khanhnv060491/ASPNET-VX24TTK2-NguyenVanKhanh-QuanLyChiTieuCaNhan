@@ -1,0 +1,23 @@
+## .NET
+bin/
+obj/
+packages/
+*.user
+*.suo
+*.cache
+*.log
+.vs/
+_ReSharper.*/
+*.DotSettings.user
+*.ncrunchsolution
+TestResults/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+[Bb]in/
+[Oo]bj/
+*.vspscc
+*.vssscc
+.builds

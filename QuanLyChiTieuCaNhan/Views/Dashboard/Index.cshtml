@@ -1,0 +1,215 @@
+@model QuanLyChiTieuCaNhan.Models.ViewModels.DashboardViewModel
+@{
+    ViewBag.Title = "Dashboard";
+}
+
+<h4 class="mb-4"><i class="fas fa-tachometer-alt"></i> Dashboard - Tháng @DateTime.Now.Month/@DateTime.Now.Year</h4>
+
+<!-- 3 thẻ tóm tắt -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card border-left-success shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Tổng thu tháng</div>
+                <div class="h5 mb-0 font-weight-bold">@Model.TotalIncome.ToString("N0") VND</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-left-danger shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Tổng chi tháng</div>
+                <div class="h5 mb-0 font-weight-bold">@Model.TotalExpense.ToString("N0") VND</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-left-info shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Số dư ròng tháng</div>
+                <div class="h5 mb-0 font-weight-bold @(Model.NetBalance >= 0 ? "text-success" : "text-danger")">
+                    @Model.NetBalance.ToString("N0") VND
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Biểu đồ -->
+<div class="row mb-4">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white font-weight-bold">
+                <i class="fas fa-chart-pie"></i> Chi tiêu theo danh mục
+            </div>
+            <div class="card-body">
+                @if (Model.ExpenseByCategory.Any())
+                {
+                    <canvas id="expenseChart" height="300"></canvas>
+                }
+                else
+                {
+                    <p class="text-muted text-center py-5">Chưa có dữ liệu chi tiêu tháng này</p>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white font-weight-bold">
+                <i class="fas fa-chart-bar"></i> Thu – Chi theo tháng (@DateTime.Now.Year)
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ngân sách nhanh + Giao dịch gần nhất -->
+<div class="row">
+    <div class="col-md-5">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white font-weight-bold">
+                <i class="fas fa-chart-pie"></i> Ngân sách tháng này
+                @{
+                    var overBudgets = Model.TopBudgets.Where(b => b.Percentage > 90).ToList();
+                    if (overBudgets.Any())
+                    {
+                        <span class="badge badge-danger float-right">@overBudgets.Count vượt mức!</span>
+                    }
+                }
+            </div>
+            <div class="card-body">
+                @if (Model.TopBudgets.Any())
+                {
+                    foreach (var b in Model.TopBudgets)
+                    {
+                        var pct = b.Percentage;
+                        var barClass = pct > 90 ? "bg-danger" : (pct > 70 ? "bg-warning" : "bg-success");
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small class="font-weight-bold">@b.CategoryName</small>
+                                <small>@b.SpentAmount.ToString("N0") / @b.LimitAmount.ToString("N0")</small>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar @barClass" style="width: @(Math.Min(pct, 100))%"></div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted text-center py-3">Chưa có ngân sách</p>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white font-weight-bold">
+                <i class="fas fa-list"></i> 10 giao dịch gần nhất
+                <a href="@Url.Action("Create", "Transaction")" class="btn btn-sm btn-primary float-right">
+                    <i class="fas fa-plus"></i> Thêm mới
+                </a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.RecentTransactions.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Danh mục</th>
+                                    <th>Ví</th>
+                                    <th class="text-right">Số tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in Model.RecentTransactions)
+                                {
+                                    var amountClass = t.TransactionType == 1 ? "text-success" : (t.TransactionType == 2 ? "text-danger" : "text-info");
+                                    var prefix = t.TransactionType == 1 ? "+" : (t.TransactionType == 2 ? "-" : "↔");
+                                    <tr>
+                                        <td>@t.TransactionDate.ToString("dd/MM")</td>
+                                        <td>@(t.Category != null ? t.Category.Name : "N/A")</td>
+                                        <td>@(t.Wallet != null ? t.Wallet.Name : "N/A")</td>
+                                        <td class="text-right font-weight-bold @amountClass">@prefix@t.Amount.ToString("N0")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted text-center py-4">Chưa có giao dịch nào</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        // Biểu đồ tròn
+        @if (Model.ExpenseByCategory.Any())
+        {
+            <text>
+            new Chart(document.getElementById('expenseChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.ExpenseByCategory.Select(e => "'" + e.CategoryName + "'")))],
+                    datasets: [{
+                        data: [@Html.Raw(string.Join(",", Model.ExpenseByCategory.Select(e => e.Amount.ToString("F0"))))],
+                        backgroundColor: ['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF','#FF9F40','#C9CBCF','#7BC8A4','#E7E9ED','#F7464A']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                    }
+                }
+            });
+            </text>
+        }
+
+        // Biểu đồ cột
+        new Chart(document.getElementById('monthlyChart'), {
+            type: 'bar',
+            data: {
+                labels: [@Html.Raw(string.Join(",", Model.MonthlyIncomeExpense.Select(m => "'T" + m.Month + "'")))],
+                datasets: [
+                    {
+                        label: 'Thu',
+                        data: [@Html.Raw(string.Join(",", Model.MonthlyIncomeExpense.Select(m => m.Income.ToString("F0"))))],
+                        backgroundColor: '#28a745'
+                    },
+                    {
+                        label: 'Chi',
+                        data: [@Html.Raw(string.Join(",", Model.MonthlyIncomeExpense.Select(m => m.Expense.ToString("F0"))))],
+                        backgroundColor: '#dc3545'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(v) { return v.toLocaleString('vi-VN'); }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    </script>
+}

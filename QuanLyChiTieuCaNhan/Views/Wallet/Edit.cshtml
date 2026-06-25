@@ -1,0 +1,40 @@
+@model QuanLyChiTieuCaNhan.Models.ViewModels.WalletEditViewModel
+@{
+    ViewBag.Title = "Sửa ví";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h4><i class="fas fa-edit"></i> Sửa ví tiền</h4>
+        <hr />
+
+        @using (Html.BeginForm("Edit", "Wallet", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(m => m.WalletId)
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.Name)
+                @Html.TextBoxFor(m => m.Name, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.Name, "", new { @class = "text-danger small" })
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.WalletType)
+                <select name="WalletType" class="form-control">
+                    <option value="1" @(Model.WalletType == 1 ? "selected" : "")>Tiền mặt</option>
+                    <option value="2" @(Model.WalletType == 2 ? "selected" : "")>Ngân hàng</option>
+                    <option value="3" @(Model.WalletType == 3 ? "selected" : "")>Ví điện tử</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Cập nhật
+            </button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        }
+    </div>
+</div>
